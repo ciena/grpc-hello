@@ -1,0 +1,25 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: hello-client
+    labels:
+        app: hello-client
+spec:
+    replicas: 3
+    selector:
+        matchLabels:
+            app: hello-client
+    template:
+        metadata:
+            labels:
+                app: hello-client
+        spec:
+            containers:
+                - name: client
+                  image: grpc-hello-client:0.1.0
+                  imagePullPolicy: IfNotPresent
+                  args:
+                      - "--addr=hello-server.default.svc.cluster.local:8080"
+                      - "--interval=3s"
+                      - "--timeout=10s"

@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package hello;
+
+option go_package = "pkg/apis/hello";
+
+message ID {
+    string IP = 1;
+    string Hostname = 2;
+}
+
+message HelloRequest {
+    string sentAt = 1;
+    ID sentBy = 2;
+}
+
+message HelloResponse {
+    string receivedAt = 1;
+    ID respondedBy = 2;
+}
+
+service Hello {
+    rpc SayHello(HelloRequest) returns (HelloResponse);
+}

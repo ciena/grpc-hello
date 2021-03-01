@@ -1,0 +1,37 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: hello-server
+spec:
+    clusterIP: None
+    ports:
+        - port: 8080
+          targetPort: 8080
+          protocol: TCP
+          name: grpc
+    selector:
+        app: hello-server
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: hello-server
+    labels:
+        app: hello-server
+spec:
+    replicas: 3
+    selector:
+        matchLabels:
+            app: hello-server
+    template:
+        metadata:
+            labels:
+                app: hello-server
+        spec:
+            containers:
+                - name: server
+                  image: grpc-hello-server:0.1.0
+                  imagePullPolicy: IfNotPresent
+                  args:
+                      - "--listen=:8080"

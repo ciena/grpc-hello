@@ -1,0 +1,64 @@
+ARG GOLANG_IMAGE=golang:1.15.7-alpine3.13
+ARG DEPLOY_IMAGE=gcr.io/distroless/static:nonroot
+
+FROM $GOLANG_IMAGE as builder
+
+WORKDIR /workspace
+# Copy the Go Modules manifests
+COPY go.mod go.mod
+COPY go.sum go.sum
+# cache deps before building and copying source so that we don't need to re-download as much
+# and so that source changes don't invalidate our downloaded layer
+RUN go mod download
+
+# Copy the go source
+COPY cmd/ cmd/
+COPY pkg/ pkg/
+COPY internal/ internal/
+
+ARG org_label_schema_version=unknown
+ARG org_label_schema_vcs_url=unknown
+ARG org_label_schema_vcs_ref=unknown
+ARG org_label_schema_vcs_commit_date=unknown
+ARG org_label_schema_vcs_dirty=unknown
+ARG org_label_schema_build_date=unknown
+
+# Build
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o grpc-hello-server \
+-ldflags \
+"-X github.com/ciena/grpc-hello/pkg/version.version="$org_label_schema_version" \
+-X github.com/ciena/grpc-hello/pkg/version.vcsURL="$org_label_schema_vcs_url" \
+-X github.com/ciena/grpc-hello/pkg/version.vcsRef="$org_label_schema_vcs_ref" \
+-X github.com/ciena/grpc-hello/pkg/version.vcsCommitDate="$org_label_schema_vcs_commit_date" \
+-X github.com/ciena/grpc-hello/pkg/version.vcsDirty="$org_label_schema_vcs_dirty" \
+-X github.com/ciena/grpc-hello/pkg/version.goVersion="$(go version 2>/dev/null | cut -d ' ' -f 3)" \
+-X github.com/ciena/grpc-hello/pkg/version.os="$(go env GOHOSTOS)" \
+-X github.com/ciena/grpc-hello/pkg/version.arch="$(go env GOHOSTARCH)" \
+-X github.com/ciena/grpc-hello/pkg/version.buildDate="$org_label_schema_build_date"" \
+./cmd/server
+
+# Use distroless as minimal base image to package the manager binary
+# Refer to https://github.com/GoogleContainerTools/distroless for more details
+FROM $DEPLOY_IMAGE
+
+ARG org_label_schema_version=unknown
+ARG org_label_schema_vcs_url=unknown
+ARG org_label_schema_vcs_ref=unknown
+ARG org_label_schema_vcs_commit_date=unknown
+ARG org_label_schema_vcs_dirty=unknown
+ARG org_label_schema_build_date=unknown
+
+LABEL org.label-schema.schema-version=1.0 \
+org.label-schema.name=grpc-hello-policy \
+org.label-schema.version=$org_label_schema_version \
+org.label-schema.vcs-url=$org_label_schema_vcs_url \
+org.label-schema.vcs-ref=$org_label_schema_vcs_ref \
+org.label-schema.build-date=$org_label_schema_build_date \
+org.label-schema.vcs-commit-date=$org_label_schema_vcs_commit_date \
+org.label-schema.vcs-dirty=$org_label_schema_vcs_dirty
+
+WORKDIR /
+COPY --from=builder /workspace/grpc-hello-server .
+USER nonroot:nonroot
+
+ENTRYPOINT ["/grpc-hello-server"]
