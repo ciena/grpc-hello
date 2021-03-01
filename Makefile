@@ -78,13 +78,13 @@ docker-build-client: ## Build docker image for client
 	docker build $(DOCKER_BUILD_OPTIONS) . -t $(CLIENT_IMG) -f build/Dockerfile.client $(DOCKER_BUILD_ARGS)
 
 docker-push-client: ## Push client docker image to repository
-	docker-push $(DOCKER_PUSH_OPTIONS) $(CLIENT_IMG)
+	docker push $(DOCKER_PUSH_OPTIONS) $(CLIENT_IMG)
 
 docker-build-server: ## Build docker image for server
 	docker build $(DOCKER_BUILD_OPTIONS) . -t $(SERVER_IMG) -f build/Dockerfile.server $(DOCKER_BUILD_ARGS)
 
 docker-push-server: ## Push server docker image to repository
-	docker-push $(DOCKER_PUSH_OPTIONS) $(CLIENT_IMG)
+	docker push $(DOCKER_PUSH_OPTIONS) $(SERVER_IMG)
 
 docker-build: docker-build-client docker-build-server ## Build docker images for client and server
 
