@@ -1,5 +1,5 @@
 *.swp
-./bin
-./client
-./server
+/bin
+/client
+/server
 

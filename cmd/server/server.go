@@ -29,6 +29,7 @@ import (
 	"github.com/ciena/grpc-hello/internal/pkg/info"
 	pb "github.com/ciena/grpc-hello/pkg/apis/hello"
 	"github.com/ciena/grpc-hello/pkg/version"
+	"google.golang.org/grpc/reflection"
 
 	"google.golang.org/grpc"
 )
@@ -74,6 +75,7 @@ func main() {
 	}
 	s := grpc.NewServer()
 	pb.RegisterHelloServer(s, &server{})
+	reflection.Register(s)
 	log.Printf("accepting requests on '%s'\n", cfg.ListenOn)
 	go func() {
 		if err := s.Serve(lis); err != nil {
