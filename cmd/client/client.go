@@ -21,8 +21,10 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 
 	"github.com/ciena/grpc-hello/internal/pkg/info"
@@ -56,13 +58,6 @@ func main() {
 		os.Exit(0)
 	}
 
-	conn, err := grpc.Dial(cfg.Addr, grpc.WithInsecure(), grpc.WithBlock())
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
-	defer conn.Close()
-	c := pb.NewHelloClient(conn)
-
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, os.Interrupt)
 
@@ -74,6 +69,20 @@ func main() {
 			log.Println("Interrupt requested .... exit")
 			os.Exit(0)
 		case <-time.After(cfg.SendInterval):
+			parts := strings.Split(cfg.Addr, ":")
+			addrs, err := net.LookupHost(parts[0])
+			if err != nil {
+				log.Printf("unable to resolve '%s': %v", parts[0], err)
+			} else {
+				log.Printf("server '%s' resolved as %s", parts[0], strings.Join(addrs, ", "))
+			}
+			conn, err := grpc.Dial(cfg.Addr, grpc.WithInsecure())
+			if err != nil {
+				log.Printf("did not connect: %v", err)
+				break
+			}
+			c := pb.NewHelloClient(conn)
+
 			ctx, cancel := context.WithTimeout(context.Background(), cfg.Timeout)
 			defer cancel()
 			sentAt := time.Now().UTC()
@@ -83,8 +92,9 @@ func main() {
 					IP:       ip.String(),
 					Hostname: hostname}})
 			if err != nil {
-				log.Fatalf("could not greet: %v", err)
+				log.Printf("could not greet: %v", err)
 			}
+			conn.Close()
 			delta := time.Now().UTC().Sub(sentAt)
 			log.Printf("Greeting response: %v (%v)", resp, delta)
 		}

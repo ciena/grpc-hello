@@ -29,6 +29,7 @@ import (
 	"github.com/ciena/grpc-hello/internal/pkg/info"
 	pb "github.com/ciena/grpc-hello/pkg/apis/hello"
 	"github.com/ciena/grpc-hello/pkg/version"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/reflection"
 
 	"google.golang.org/grpc"
@@ -39,9 +40,17 @@ type server struct {
 }
 
 func (s *server) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloResponse, error) {
+	// How to get ip from ctx ?
+	var peerIP string
+	md, ok := peer.FromContext(ctx)
+	if ok {
+		peerIP = md.Addr.String()
+	}
+
 	now := time.Now().UTC()
 	sentAt, _ := time.Parse("Mon Jan 2 15:04:05.000 MST 2006", req.SentAt)
-	log.Printf("Greeting received: %v (%v)\n", req, now.Sub(sentAt))
+	log.Printf("Greeting received: %v (%v)", req, now.Sub(sentAt))
+	log.Printf("  gRPC Peer IP: %v", peerIP)
 
 	hostname, _ := os.Hostname()
 	ip, _ := info.MyIP()
